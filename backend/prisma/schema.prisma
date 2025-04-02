@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+// Modify the User model to include organization relationship
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String
+  password       String
+  role           Role         @default(USER)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+  customers      Customer[]
+  appointments   Appointment[]
+  voiceCalls     VoiceCall[]
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+model Customer {
+  id             String    @id @default(uuid())
+  name           String
+  email          String?   @unique
+  phone          String?
+  status         String    @default("New")
+  tags           String[]
+  notes          String?
+  source         String?   // e.g., "Google Sheets", "Manual", "Website"
+  externalId     String?   // ID from external system (e.g., Google Sheets row ID)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      User      @relation(fields: [userId], references: [id])
+  userId         String
+  appointments   Appointment[]
+  voiceCalls     VoiceCall[]
+}
+
+model Appointment {
+  id             String    @id @default(uuid())
+  title          String
+  date           DateTime
+  duration       Int       // in minutes
+  type           String    // e.g., "Video Call", "Phone Call", "In Person"
+  status         String    @default("Pending") // "Pending", "Confirmed", "Cancelled", "Completed"
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  customer       Customer  @relation(fields: [customerId], references: [id])
+  customerId     String
+  createdBy      User      @relation(fields: [userId], references: [id])
+  userId         String
+}
+
+model VoiceCall {
+  id             String    @id @default(uuid())
+  callId         String?   // External call ID from Vapi
+  direction      String    // "Inbound" or "Outbound"
+  status         String    // "Completed", "Missed", "Voicemail"
+  duration       Int?      // in seconds
+  recordingUrl   String?
+  transcriptUrl  String?
+  aiHandled      Boolean   @default(false)
+  notes          String?
+  startTime      DateTime
+  endTime        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  customerId     String?
+  user           User?     @relation(fields: [userId], references: [id])
+  userId         String?
+}
+
+model GoogleSheetSync {
+  id             String    @id @default(uuid())
+  sheetId        String
+  sheetName      String
+  lastSyncedAt   DateTime
+  lastRowCount   Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
