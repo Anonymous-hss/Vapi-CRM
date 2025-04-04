@@ -1,26 +1,28 @@
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/components/ui/use-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+// If you're using ngrok, you would set NEXT_PUBLIC_API_URL to your ngrok URL
+// e.g., "https://a1b2c3d4.ngrok.io/api"
 
 // Helper function to handle API responses
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || "Something went wrong")
+    const error = await response.json();
+    throw new Error(error.message || "Something went wrong");
   }
-  return response.json()
-}
+  return response.json();
+};
 
 // Helper function to handle API errors
 const handleError = (error: any) => {
-  console.error("API Error:", error)
+  console.error("API Error:", error);
   toast({
     title: "Error",
     description: error.message || "Something went wrong",
     variant: "destructive",
-  })
-  throw error
-}
+  });
+  throw error;
+};
 
 // Auth API
 export const authApi = {
@@ -32,10 +34,10 @@ export const authApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -47,10 +49,10 @@ export const authApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -62,10 +64,10 @@ export const authApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ refreshToken }),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -75,34 +77,34 @@ export const authApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
-}
+};
 
 // Customer API
 export const customerApi = {
   getCustomers: async (token: string, params: any = {}) => {
     try {
-      const queryParams = new URLSearchParams()
+      const queryParams = new URLSearchParams();
 
       Object.entries(params).forEach(([key, value]) => {
         if (value) {
-          queryParams.append(key, value as string)
+          queryParams.append(key, value as string);
         }
-      })
+      });
 
       const response = await fetch(`${API_URL}/customers?${queryParams}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -112,10 +114,10 @@ export const customerApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -128,10 +130,10 @@ export const customerApi = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -144,10 +146,10 @@ export const customerApi = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -158,34 +160,34 @@ export const customerApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
-}
+};
 
 // Appointment API
 export const appointmentApi = {
   getAppointments: async (token: string, params: any = {}) => {
     try {
-      const queryParams = new URLSearchParams()
+      const queryParams = new URLSearchParams();
 
       Object.entries(params).forEach(([key, value]) => {
         if (value) {
-          queryParams.append(key, value as string)
+          queryParams.append(key, value as string);
         }
-      })
+      });
 
       const response = await fetch(`${API_URL}/appointments?${queryParams}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -195,10 +197,10 @@ export const appointmentApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -211,10 +213,10 @@ export const appointmentApi = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -227,10 +229,10 @@ export const appointmentApi = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -241,13 +243,13 @@ export const appointmentApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
-}
+};
 
 // Google Sheet API
 export const googleSheetApi = {
@@ -258,10 +260,10 @@ export const googleSheetApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
 
@@ -271,11 +273,10 @@ export const googleSheetApi = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      return handleResponse(response)
+      });
+      return handleResponse(response);
     } catch (error) {
-      return handleError(error)
+      return handleError(error);
     }
   },
-}
-
+};

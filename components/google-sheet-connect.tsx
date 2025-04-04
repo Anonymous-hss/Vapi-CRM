@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { useState } from "react";
 import {
   Card,
@@ -36,9 +38,17 @@ export function GoogleSheetConnect({
   const [syncStatus, setSyncStatus] = useState<
     "idle" | "syncing" | "success" | "error"
   >("idle");
+  const [syncInfo, setSyncInfo] = useState<any>(null);
   const { toast } = useToast();
 
-  const handleConnect = () => {
+  // Function to extract sheet ID from URL
+  const extractSheetId = (url: string) => {
+    const regex = /\/d\/([a-zA-Z0-9-_]+)/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+
+  const handleConnect = async () => {
     if (!sheetUrl) {
       toast({
         title: "Error",
@@ -48,24 +58,126 @@ export function GoogleSheetConnect({
       return;
     }
 
+    const sheetId = extractSheetId(sheetUrl);
+    if (!sheetId) {
+      toast({
+        title: "Error",
+        description: "Invalid Google Sheet URL. Please enter a valid URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to connect a Google Sheet",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Call your backend API to set up the Google Sheet connection
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/google-sheet/configure`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            sheetId,
+            sheetName: sheetName || "Sheet1",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to connect Google Sheet");
+      }
+
+      // Get the sync status
+      await fetchSyncStatus();
+
       onConnect();
       toast({
         title: "Success",
         description: "Google Sheet connected successfully",
       });
-    }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to connect Google Sheet",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSync = () => {
+  const fetchSyncStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/google-sheet/status`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSyncInfo(data);
+        return data;
+      }
+    } catch (error) {
+      console.error("Failed to fetch sync status:", error);
+    }
+  };
+
+  const handleSync = async () => {
     setSyncStatus("syncing");
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to sync Google Sheet",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Call your backend API to trigger a sync
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/google-sheet/sync`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to sync Google Sheet");
+      }
+
+      // Update sync status
+      await fetchSyncStatus();
+
       setSyncStatus("success");
       toast({
         title: "Success",
@@ -76,8 +188,25 @@ export function GoogleSheetConnect({
       setTimeout(() => {
         setSyncStatus("idle");
       }, 3000);
-    }, 2000);
+    } catch (error: any) {
+      setSyncStatus("error");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sync Google Sheet",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        setSyncStatus("idle");
+      }, 3000);
+    }
   };
+
+  // Fetch sync status on component mount if connected
+  React.useEffect(() => {
+    if (isConnected) {
+      fetchSyncStatus();
+    }
+  }, [isConnected]);
 
   return (
     <Card>
@@ -88,7 +217,7 @@ export function GoogleSheetConnect({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isConnected ? (
+        {isConnected && syncInfo ? (
           <div className="space-y-4">
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -106,23 +235,27 @@ export function GoogleSheetConnect({
                 <div>
                   <h3 className="font-medium">Customer Data</h3>
                   <p className="text-sm text-muted-foreground">
-                    customers-data.xlsx
+                    {syncInfo.sheetName || "Sheet1"}
                   </p>
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="font-medium">Last Synced</p>
-                  <p className="text-muted-foreground">5 minutes ago</p>
+                  <p className="text-muted-foreground">
+                    {new Date(syncInfo.lastSyncedAt).toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium">Records</p>
-                  <p className="text-muted-foreground">124 customers</p>
+                  <p className="text-muted-foreground">
+                    {syncInfo.lastRowCount} customers
+                  </p>
                 </div>
                 <div>
-                  <p className="font-medium">Sheet Name</p>
+                  <p className="font-medium">Sheet ID</p>
                   <p className="text-muted-foreground">
-                    {sheetName || "Sheet1"}
+                    {syncInfo.sheetId.substring(0, 10)}...
                   </p>
                 </div>
                 <div>
@@ -191,7 +324,7 @@ export function GoogleSheetConnect({
         )}
       </CardContent>
       <CardFooter>
-        {isConnected ? (
+        {isConnected && syncInfo ? (
           <Button
             onClick={handleSync}
             disabled={syncStatus === "syncing"}
