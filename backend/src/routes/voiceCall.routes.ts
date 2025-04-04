@@ -271,4 +271,65 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Get voice call statistics
+router.get("/stats", async (req, res) => {
+  try {
+    // Check if Vapi is connected
+    const isConnected = !!process.env.VAPI_API_KEY;
+
+    // Get call statistics
+    const [totalCalls, aiHandledCalls, callsWithDuration] = await Promise.all([
+      prisma.voiceCall.count(),
+      prisma.voiceCall.count({
+        where: { aiHandled: true },
+      }),
+      prisma.voiceCall.findMany({
+        where: {
+          duration: {
+            not: null,
+          },
+        },
+        select: {
+          duration: true,
+        },
+      }),
+    ]);
+
+    // Calculate average duration
+    let avgDuration = "0:00";
+    if (callsWithDuration.length > 0) {
+      const totalDuration = callsWithDuration.reduce(
+        (sum, call) => sum + (call.duration || 0),
+        0
+      );
+      const avgSeconds = Math.round(totalDuration / callsWithDuration.length);
+      const minutes = Math.floor(avgSeconds / 60);
+      const seconds = avgSeconds % 60;
+      avgDuration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    // Calculate success rate (completed calls / total calls)
+    const completedCalls = await prisma.voiceCall.count({
+      where: { status: "Completed" },
+    });
+    const successRate =
+      totalCalls > 0
+        ? `${Math.round((completedCalls / totalCalls) * 100)}%`
+        : "0%";
+
+    res.status(200).json({
+      isConnected,
+      stats: {
+        totalCalls,
+        aiHandled: aiHandledCalls,
+        avgDuration,
+        successRate,
+      },
+    });
+  } catch (error) {
+    console.error("Get voice call stats error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;

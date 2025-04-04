@@ -1,20 +1,80 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { AlertCircle, Bot, FileCode, MessageSquare, Phone, Settings } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertCircle,
+  Bot,
+  FileCode,
+  MessageSquare,
+  Phone,
+  Settings,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function VapiIntegration() {
-  const [isConnected, setIsConnected] = useState(false)
+  // Add state and useEffect to fetch real data
+  const [isConnected, setIsConnected] = useState(false);
+  const [callStats, setCallStats] = useState({
+    totalCalls: 0,
+    aiHandled: 0,
+    avgDuration: "0:00",
+    successRate: "0%",
+  });
+
+  useEffect(() => {
+    const fetchVapiStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // Check if Vapi is connected
+        const response = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+          }/voice-calls/stats`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsConnected(data.isConnected || false);
+
+          if (data.stats) {
+            setCallStats({
+              totalCalls: data.stats.totalCalls || 0,
+              aiHandled: data.stats.aiHandled || 0,
+              avgDuration: data.stats.avgDuration || "0:00",
+              successRate: data.stats.successRate || "0%",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch Vapi status:", error);
+      }
+    };
+
+    fetchVapiStatus();
+  }, []);
 
   return (
     <Tabs defaultValue="dashboard">
@@ -34,8 +94,12 @@ export function VapiIntegration() {
               <Phone className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">245</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              {/* Update the card content to use real data */}
+              {/* In the Dashboard tab, update the card content: */}
+              <div className="text-2xl font-bold">{callStats.totalCalls}</div>
+              <p className="text-xs text-muted-foreground">
+                +12% from last month
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -44,28 +108,44 @@ export function VapiIntegration() {
               <Bot className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">189</div>
-              <p className="text-xs text-muted-foreground">77% of total calls</p>
+              {/* For AI Handled: */}
+              <div className="text-2xl font-bold">{callStats.aiHandled}</div>
+              <p className="text-xs text-muted-foreground">
+                {Math.round(
+                  (callStats.aiHandled / callStats.totalCalls) * 100
+                ) || 0}
+                % of total calls
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Duration</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Avg. Duration
+              </CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3:24</div>
-              <p className="text-xs text-muted-foreground">-18% from last month</p>
+              {/* For Avg. Duration: */}
+              <div className="text-2xl font-bold">{callStats.avgDuration}</div>
+              <p className="text-xs text-muted-foreground">
+                -18% from last month
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Success Rate
+              </CardTitle>
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">92%</div>
-              <p className="text-xs text-muted-foreground">+5% from last month</p>
+              {/* For Success Rate: */}
+              <div className="text-2xl font-bold">{callStats.successRate}</div>
+              <p className="text-xs text-muted-foreground">
+                +5% from last month
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -74,15 +154,20 @@ export function VapiIntegration() {
           <Card className="md:col-span-1">
             <CardHeader>
               <CardTitle>Vapi Connection Status</CardTitle>
-              <CardDescription>Configure your Vapi AI voice integration</CardDescription>
+              <CardDescription>
+                Configure your Vapi AI voice integration
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {isConnected ? (
                 <Alert className="bg-green-50 border-green-200">
                   <Bot className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-600">Connected to Vapi</AlertTitle>
+                  <AlertTitle className="text-green-600">
+                    Connected to Vapi
+                  </AlertTitle>
                   <AlertDescription className="text-green-700">
-                    Your CRM is successfully connected to Vapi AI voice services.
+                    Your CRM is successfully connected to Vapi AI voice
+                    services.
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -90,20 +175,29 @@ export function VapiIntegration() {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Not Connected</AlertTitle>
                   <AlertDescription>
-                    Please configure your Vapi API credentials to enable voice integration.
+                    Please configure your Vapi API credentials to enable voice
+                    integration.
                   </AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="api-key">Vapi API Key</Label>
-                <Input id="api-key" type="password" placeholder="Enter your Vapi API key" />
+                <Input
+                  id="api-key"
+                  type="password"
+                  placeholder="Enter your Vapi API key"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="webhook-url">Webhook URL</Label>
                 <div className="flex gap-2">
-                  <Input id="webhook-url" value="https://your-crm-domain.com/api/vapi/webhook" readOnly />
+                  <Input
+                    id="webhook-url"
+                    value="https://your-crm-domain.com/api/vapi/webhook"
+                    readOnly
+                  />
                   <Button variant="outline" size="icon">
                     <FileCode className="h-4 w-4" />
                     <span className="sr-only">Copy</span>
@@ -115,7 +209,10 @@ export function VapiIntegration() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" onClick={() => setIsConnected(!isConnected)}>
+              <Button
+                className="w-full"
+                onClick={() => setIsConnected(!isConnected)}
+              >
                 {isConnected ? "Disconnect" : "Connect to Vapi"}
               </Button>
             </CardFooter>
@@ -124,13 +221,17 @@ export function VapiIntegration() {
           <Card className="md:col-span-1">
             <CardHeader>
               <CardTitle>Quick Settings</CardTitle>
-              <CardDescription>Configure your AI voice agent behavior</CardDescription>
+              <CardDescription>
+                Configure your AI voice agent behavior
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="auto-answer">Automatic Call Answering</Label>
-                  <p className="text-xs text-muted-foreground">Let AI answer incoming calls automatically</p>
+                  <p className="text-xs text-muted-foreground">
+                    Let AI answer incoming calls automatically
+                  </p>
                 </div>
                 <Switch id="auto-answer" defaultChecked />
               </div>
@@ -138,7 +239,9 @@ export function VapiIntegration() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="transcription">Call Transcription</Label>
-                  <p className="text-xs text-muted-foreground">Record and transcribe all voice interactions</p>
+                  <p className="text-xs text-muted-foreground">
+                    Record and transcribe all voice interactions
+                  </p>
                 </div>
                 <Switch id="transcription" defaultChecked />
               </div>
@@ -146,7 +249,9 @@ export function VapiIntegration() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="appointment">Appointment Scheduling</Label>
-                  <p className="text-xs text-muted-foreground">Allow AI to schedule appointments during calls</p>
+                  <p className="text-xs text-muted-foreground">
+                    Allow AI to schedule appointments during calls
+                  </p>
                 </div>
                 <Switch id="appointment" defaultChecked />
               </div>
@@ -154,7 +259,9 @@ export function VapiIntegration() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="human-transfer">Human Transfer</Label>
-                  <p className="text-xs text-muted-foreground">Transfer to human agent when AI can't resolve</p>
+                  <p className="text-xs text-muted-foreground">
+                    Transfer to human agent when AI can't resolve
+                  </p>
                 </div>
                 <Switch id="human-transfer" defaultChecked />
               </div>
@@ -167,7 +274,9 @@ export function VapiIntegration() {
         <Card>
           <CardHeader>
             <CardTitle>Voice Agent Configuration</CardTitle>
-            <CardDescription>Customize how your AI voice agents interact with customers</CardDescription>
+            <CardDescription>
+              Customize how your AI voice agents interact with customers
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -197,7 +306,8 @@ export function VapiIntegration() {
                 defaultValue="You are a helpful CRM assistant. Your job is to help customers schedule appointments, answer questions about our services, and collect their contact information. Always be polite and professional. If you can't help with something, offer to transfer them to a human agent."
               />
               <p className="text-xs text-muted-foreground">
-                Provide clear instructions for how your AI agent should interact with customers.
+                Provide clear instructions for how your AI agent should interact
+                with customers.
               </p>
             </div>
 
@@ -219,19 +329,39 @@ export function VapiIntegration() {
               <Label>Agent Capabilities</Label>
               <div className="grid gap-2">
                 <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="schedule" className="rounded border-gray-300" defaultChecked />
+                  <input
+                    type="checkbox"
+                    id="schedule"
+                    className="rounded border-gray-300"
+                    defaultChecked
+                  />
                   <Label htmlFor="schedule">Schedule Appointments</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="collect" className="rounded border-gray-300" defaultChecked />
+                  <input
+                    type="checkbox"
+                    id="collect"
+                    className="rounded border-gray-300"
+                    defaultChecked
+                  />
                   <Label htmlFor="collect">Collect Customer Information</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="answer" className="rounded border-gray-300" defaultChecked />
+                  <input
+                    type="checkbox"
+                    id="answer"
+                    className="rounded border-gray-300"
+                    defaultChecked
+                  />
                   <Label htmlFor="answer">Answer FAQs</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="transfer" className="rounded border-gray-300" defaultChecked />
+                  <input
+                    type="checkbox"
+                    id="transfer"
+                    className="rounded border-gray-300"
+                    defaultChecked
+                  />
                   <Label htmlFor="transfer">Transfer to Human Agent</Label>
                 </div>
               </div>
@@ -248,14 +378,17 @@ export function VapiIntegration() {
         <Card>
           <CardHeader>
             <CardTitle>Webhook Configuration</CardTitle>
-            <CardDescription>Set up webhooks to receive real-time events from Vapi</CardDescription>
+            <CardDescription>
+              Set up webhooks to receive real-time events from Vapi
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Important</AlertTitle>
               <AlertDescription>
-                Configure these webhook endpoints in your Vapi dashboard to receive events in your CRM.
+                Configure these webhook endpoints in your Vapi dashboard to
+                receive events in your CRM.
               </AlertDescription>
             </Alert>
 
@@ -263,7 +396,11 @@ export function VapiIntegration() {
               <div className="space-y-2">
                 <Label htmlFor="call-started">Call Started Webhook</Label>
                 <div className="flex gap-2">
-                  <Input id="call-started" value="https://your-crm-domain.com/api/vapi/call-started" readOnly />
+                  <Input
+                    id="call-started"
+                    value="https://your-crm-domain.com/api/vapi/call-started"
+                    readOnly
+                  />
                   <Button variant="outline" size="icon">
                     <FileCode className="h-4 w-4" />
                     <span className="sr-only">Copy</span>
@@ -274,7 +411,11 @@ export function VapiIntegration() {
               <div className="space-y-2">
                 <Label htmlFor="call-ended">Call Ended Webhook</Label>
                 <div className="flex gap-2">
-                  <Input id="call-ended" value="https://your-crm-domain.com/api/vapi/call-ended" readOnly />
+                  <Input
+                    id="call-ended"
+                    value="https://your-crm-domain.com/api/vapi/call-ended"
+                    readOnly
+                  />
                   <Button variant="outline" size="icon">
                     <FileCode className="h-4 w-4" />
                     <span className="sr-only">Copy</span>
@@ -285,7 +426,11 @@ export function VapiIntegration() {
               <div className="space-y-2">
                 <Label htmlFor="transcription">Transcription Webhook</Label>
                 <div className="flex gap-2">
-                  <Input id="transcription" value="https://your-crm-domain.com/api/vapi/transcription" readOnly />
+                  <Input
+                    id="transcription"
+                    value="https://your-crm-domain.com/api/vapi/transcription"
+                    readOnly
+                  />
                   <Button variant="outline" size="icon">
                     <FileCode className="h-4 w-4" />
                     <span className="sr-only">Copy</span>
@@ -296,7 +441,11 @@ export function VapiIntegration() {
               <div className="space-y-2">
                 <Label htmlFor="appointment">Appointment Webhook</Label>
                 <div className="flex gap-2">
-                  <Input id="appointment" value="https://your-crm-domain.com/api/vapi/appointment" readOnly />
+                  <Input
+                    id="appointment"
+                    value="https://your-crm-domain.com/api/vapi/appointment"
+                    readOnly
+                  />
                   <Button variant="outline" size="icon">
                     <FileCode className="h-4 w-4" />
                     <span className="sr-only">Copy</span>
@@ -307,9 +456,14 @@ export function VapiIntegration() {
 
             <div className="space-y-2 pt-4">
               <Label htmlFor="secret-key">Webhook Secret Key</Label>
-              <Input id="secret-key" type="password" placeholder="Enter a secret key for webhook verification" />
+              <Input
+                id="secret-key"
+                type="password"
+                placeholder="Enter a secret key for webhook verification"
+              />
               <p className="text-xs text-muted-foreground">
-                This secret key will be used to verify that webhook requests are coming from Vapi.
+                This secret key will be used to verify that webhook requests are
+                coming from Vapi.
               </p>
             </div>
           </CardContent>
@@ -323,7 +477,9 @@ export function VapiIntegration() {
         <Card>
           <CardHeader>
             <CardTitle>Call History</CardTitle>
-            <CardDescription>View and manage your recent voice interactions</CardDescription>
+            <CardDescription>
+              View and manage your recent voice interactions
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border">
@@ -349,7 +505,10 @@ export function VapiIntegration() {
                       <Badge variant="default">Completed</Badge>
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-50 text-purple-700 border-purple-200"
+                      >
                         AI Handled
                       </Badge>
                     </td>
@@ -402,7 +561,10 @@ export function VapiIntegration() {
                       <Badge variant="outline">Voicemail</Badge>
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-50 text-purple-700 border-purple-200"
+                      >
                         AI Handled
                       </Badge>
                     </td>
@@ -421,7 +583,10 @@ export function VapiIntegration() {
                       <Badge variant="default">Completed</Badge>
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-50 text-purple-700 border-purple-200"
+                      >
                         AI Handled
                       </Badge>
                     </td>
@@ -442,7 +607,9 @@ export function VapiIntegration() {
         <Card>
           <CardHeader>
             <CardTitle>Vapi Integration Settings</CardTitle>
-            <CardDescription>Configure advanced settings for your Vapi integration</CardDescription>
+            <CardDescription>
+              Configure advanced settings for your Vapi integration
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -450,7 +617,11 @@ export function VapiIntegration() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="api-key">Vapi API Key</Label>
-                  <Input id="api-key" type="password" placeholder="Enter your Vapi API key" />
+                  <Input
+                    id="api-key"
+                    type="password"
+                    placeholder="Enter your Vapi API key"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="api-url">API Base URL</Label>
@@ -485,13 +656,17 @@ export function VapiIntegration() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="transcribe-calls">Transcribe Calls</Label>
-                    <p className="text-xs text-muted-foreground">Generate text transcripts of all voice interactions</p>
+                    <p className="text-xs text-muted-foreground">
+                      Generate text transcripts of all voice interactions
+                    </p>
                   </div>
                   <Switch id="transcribe-calls" defaultChecked />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="retention-period">Call Retention Period</Label>
+                  <Label htmlFor="retention-period">
+                    Call Retention Period
+                  </Label>
                   <select
                     id="retention-period"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -512,7 +687,9 @@ export function VapiIntegration() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="auto-sync">Auto-Sync Customer Data</Label>
-                    <p className="text-xs text-muted-foreground">Automatically sync customer data with Vapi</p>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically sync customer data with Vapi
+                    </p>
                   </div>
                   <Switch id="auto-sync" defaultChecked />
                 </div>
@@ -520,14 +697,20 @@ export function VapiIntegration() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="calendar-sync">Calendar Integration</Label>
-                    <p className="text-xs text-muted-foreground">Allow Vapi to access calendar for scheduling</p>
+                    <p className="text-xs text-muted-foreground">
+                      Allow Vapi to access calendar for scheduling
+                    </p>
                   </div>
                   <Switch id="calendar-sync" defaultChecked />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="webhook-secret">Webhook Secret</Label>
-                  <Input id="webhook-secret" type="password" placeholder="Enter webhook secret key" />
+                  <Input
+                    id="webhook-secret"
+                    type="password"
+                    placeholder="Enter webhook secret key"
+                  />
                 </div>
               </div>
             </div>
@@ -539,6 +722,5 @@ export function VapiIntegration() {
         </Card>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
-

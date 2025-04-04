@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -11,7 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+// Add the missing import for Users
 import {
+  Calendar,
   ChevronLeft,
   ChevronRight,
   List,
@@ -20,89 +21,72 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 
 export function AppointmentsCalendar() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  // Replace the appointments array with a useState and useEffect to fetch from backend
+  const [appointments, setAppointments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [date, setDate] = useState<Date | undefined>(new Date());
 
-  // Sample appointments data
-  const appointments = [
-    {
-      id: 1,
-      title: "Meeting with John Smith",
-      date: new Date(),
-      time: "2:00 PM",
-      duration: "30 min",
-      type: "Video Call",
-      status: "Confirmed",
-    },
-    {
-      id: 2,
-      title: "Call with Sarah Johnson",
-      date: new Date(),
-      time: "4:30 PM",
-      duration: "45 min",
-      type: "Phone Call",
-      status: "Confirmed",
-    },
-    {
-      id: 3,
-      title: "Consultation with Michael Brown",
-      date: addDays(new Date(), 1),
-      time: "10:00 AM",
-      duration: "60 min",
-      type: "In Person",
-      status: "Pending",
-    },
-    {
-      id: 4,
-      title: "Follow-up with Emily Davis",
-      date: addDays(new Date(), 1),
-      time: "1:15 PM",
-      duration: "30 min",
-      type: "Video Call",
-      status: "Confirmed",
-    },
-    {
-      id: 5,
-      title: "Product demo for David Wilson",
-      date: addDays(new Date(), 2),
-      time: "11:00 AM",
-      duration: "45 min",
-      type: "Video Call",
-      status: "Confirmed",
-    },
-    {
-      id: 6,
-      title: "Initial consultation with Jennifer Taylor",
-      date: addDays(new Date(), 3),
-      time: "3:30 PM",
-      duration: "60 min",
-      type: "Phone Call",
-      status: "Pending",
-    },
-  ];
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // Format date for API
+        const formattedDate = date ? date.toISOString().split("T")[0] : "";
+
+        const response = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+          }/appointments?startDate=${formattedDate}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setAppointments(data.appointments || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch appointments:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, [date]);
 
   // Function to get appointments for a specific date
   const getAppointmentsForDate = (date: Date | undefined) => {
     if (!date) return [];
-    return appointments.filter(
-      (appointment) =>
-        appointment.date.getDate() === date.getDate() &&
-        appointment.date.getMonth() === date.getMonth() &&
-        appointment.date.getFullYear() === date.getFullYear()
-    );
+    return appointments.filter((appointment) => {
+      const appointmentDate = new Date(appointment.date);
+      return (
+        appointmentDate.getDate() === date.getDate() &&
+        appointmentDate.getMonth() === date.getMonth() &&
+        appointmentDate.getFullYear() === date.getFullYear()
+      );
+    });
   };
 
   // Function to check if a date has appointments
   const hasAppointments = (date: Date) => {
-    return appointments.some(
-      (appointment) =>
-        appointment.date.getDate() === date.getDate() &&
-        appointment.date.getMonth() === date.getMonth() &&
-        appointment.date.getFullYear() === date.getFullYear()
-    );
+    return appointments.some((appointment) => {
+      const appointmentDate = new Date(appointment.date);
+      return (
+        appointmentDate.getDate() === date.getDate() &&
+        appointmentDate.getMonth() === date.getMonth() &&
+        appointmentDate.getFullYear() === date.getFullYear()
+      );
+    });
   };
 
   const todaysAppointments = getAppointmentsForDate(date);
