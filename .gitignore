@@ -26,3 +26,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#credentials
+backend/credentials.json
+backend/credentialsqwq.json
