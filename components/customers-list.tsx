@@ -48,8 +48,11 @@ export function CustomersList() {
 
   useEffect(() => {
     const fetchCustomers = async () => {
+      // console.log("hi");
       try {
         const token = localStorage.getItem("token");
+        console.log(token);
+
         if (!token) return;
 
         const response = await fetch(
@@ -77,6 +80,7 @@ export function CustomersList() {
 
     fetchCustomers();
   }, [page, limit, search]);
+  // console.log(customers);
 
   const filteredCustomers = customers;
 
